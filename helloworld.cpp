@@ -1,6 +1,9 @@
+#include <algorithm>
 #include <iostream>
-#include <vector>
+#include <stdlib.h>
 #include <string>
+#include <time.h>
+#include <vector> 
 
 using namespace std;
 
@@ -31,6 +34,28 @@ void drawGridworld() {
 int main()
 {
     // Initial function to draw grid world
-    drawGridworld();
+    //drawGridworld();
+	
+	// Initialize random seed
+	srand (time(NULL));
+	
+	/*
+	Initial stochastic model for burning of the fire
+	*/
+	    
+    // Defining burning rate
+    int burningRate = 5;
+    int totalFuel = 50;
+    
+    for (int i = 0; i < 10; i++) {
+    	// Generate random number and decide to turn on or off with even probability
+		int burningBool = rand() % 10 + 1;
+    	if (burningBool % 2 == 0) {
+    		totalFuel = max(0, totalFuel - burningRate);
+		}
+		
+		cout << "Remaining fuel left: " << totalFuel << endl;
+	}
+    
     return 0;
 }
