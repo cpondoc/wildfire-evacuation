@@ -1,3 +1,7 @@
+/*
+File: wildfire.cpp
+Initial start with modeling wildfire spread!
+*/
 #include <algorithm>
 #include <cmath>
 #include <iostream>
@@ -47,9 +51,10 @@ float calculateDistance(int xOne, int yOne, int xTwo, int yTwo) {
 
 int main()
 {	
-	// Initialize random seed and grid dimension
+	// Initialize random seed, grid dimension, and constant for proportionality of distance
 	srand (time(NULL));
 	int gridDim = 5;
+	int distanceConstant = 3;
 	
 	/*
 	Initial stochastic model for fuel of a cell
@@ -80,16 +85,27 @@ int main()
 	int y = rand() % gridDim;
 	
 	// Investigate all existing points around it
-	int pointsAround[4][2] = {{x + 1, y}, {x - 1, y}, {x, y + 1}, {x, y - 1}};
-	for (int  i = 0; i < 4; i++) {
-		// Check if added point is still within bounds
+	int pointsAround[8][2] = {{x + 1, y}, {x - 1, y}, {x, y + 1}, {x, y - 1}, {x + 1, y + 1}, {x + 1, y - 1}, {x - 1, y - 1}, {x - 1, y + 1}};
+	float probSpread = 1;
+	for (int i = 0; i < 8; i++) {
+		// Determine if current cell is burning
+		bool currBurning = isCellBurning();
+		
+		// Check to see if we can multiply this probability
 		if ((0 <= pointsAround[i][0] && pointsAround[i][0] < gridDim) && (0 <= pointsAround[i][1] && pointsAround[i][1] < gridDim)) {
-			cout << "ioj";
+			float pointDistance = distanceConstant * calculateDistance(x, y, pointsAround[i][0], pointsAround[i][1]);
+			probSpread *= 1 - (pow(float(1 / pointDistance), 2) * currBurning);
 		}
+		
 	}
 	
-	// Initial function to draw grid world
-    // drawGridworld(5);
+	// Simple if to check for fuel and to subtract
+	cout << "Probability of igniting based on proximity to burning cells: ";
+    if (totalFuel > 0) {
+    	cout << float(1) - probSpread << endl;
+	} else {
+		cout << 0 << endl;
+	}
     
     return 0;
 }
