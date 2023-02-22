@@ -11,7 +11,7 @@ Initial start with modeling wildfire spread!
 #include <vector> 
 
 using namespace std;
-
+//bruh
 /*
 Function to help draw grid on the screen
 */
