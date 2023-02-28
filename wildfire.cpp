@@ -88,7 +88,7 @@ void printData(vector<vector<LandCell> >& state){
 }
 
 /*
-Helper function to help check through all states and deplete fire by 1.
+Helper function to that updates the states through all deterministic changes in the time step. check through all states and deplete fire by 1.
 If there is no more fire, then we set the boolean equal to 0.
 */
 void runDetForward(vector<vector<LandCell> >& state, vector<populatedArea>& actionSpace){
@@ -221,7 +221,7 @@ pair<int,int> sparseSampling(vector<vector<LandCell> >& state, vector<populatedA
 	
 
 	return {-1, reward};
-	
+
 }
 
 void runSimulation(int gridDim, double distanceConstant, int burnRate){
