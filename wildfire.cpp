@@ -16,6 +16,11 @@ using namespace std;
 random_device rd;
 mt19937 gen(rd());
 
+/*
+Struct to represent a land cell. It currently contains...
+-A boolean to represent if there is a fire
+-A double to represent the amount of fuel left in the land cell
+*/
 struct LandCell{
 	bool fire = false;
 	double fuel;
@@ -58,16 +63,10 @@ double calculateDistance(int xOne, int yOne, int xTwo, int yTwo) {
 	return sqrt(pow(xOne - xTwo, 2) + pow((yOne - yTwo), 2));
 }
 
+/*
+Currently a replacement for `drawGridworld` -- helps to visualize the look of the canvas
+*/
 void printData(vector<vector<LandCell> >& state){
-	//prints our levels really quickly
-	/*
-	for(int i = 0; i < state.size(); i++){
-		for(int j = 0; j < state[0].size(); j++){
-			cout << state[i][j].fuel << " ";
-		}
-		cout << endl;
-	}
-	*/
 	for(int i = 0; i < state.size(); i++){
 		for(int j = 0; j < state[0].size(); j++){
 			cout << state[i][j].fire << " ";
@@ -77,10 +76,14 @@ void printData(vector<vector<LandCell> >& state){
 
 }
 
+/*
+Helper function to help check through all states and deplete fire by 1.
+If there is no more fire, then we set the boolean equal to 0.
+*/
 void runFuelDepletion(vector<vector<LandCell> >& state){
 	for(int i = 0; i < state.size(); i++){
 		for(int j = 0; j < state[0].size(); j++)
-			if(state[i][j].fire){
+			if (state[i][j].fire){
 				state[i][j].fuel = max(double(0), state[i][j].fuel - 1);
 				if(!state[i][j].fuel){
 					state[i][j].fire = false;
@@ -153,7 +156,8 @@ vector<vector<vector<LandCell> > > sampleNextStates(vector<vector<LandCell> >& s
 	for(int t = 0; t < total; t++){
 
 		futureStates.push_back(vector<vector<LandCell> >(state.size(), vector<LandCell>(state[0].size())));
-
+		
+		// Uses Bernoulli distribution in order to model if a fire exists or doesn't exist at a certain place
 		for(int i = 0; i < state.size(); i++){
 			for(int j = 0; j < state[0].size(); j++){
 				futureStates[futureStates.size() - 1][i][j] = state[i][j];
