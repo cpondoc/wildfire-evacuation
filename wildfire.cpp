@@ -27,14 +27,18 @@ struct LandCell{
 	bool populated = false;
 };
 
-// remainingTime == 0 means there are no longer people there (either evacuated or died)
+/*
+Struct to represent a populated area. It currently contains...
+-ints i and j to represent the location of the populated area [TO-DO: make this cleaner?]
+-A boolean to indicate if the populated area is evacuating or not
+-An int, where if set to 0, means there are no longer people there (either evacuated or died)
+*/
 struct populatedArea{
 	int i;
 	int j;
 	bool evacuating = false;
 	int remainingTime;
 };
-
 
 
 /*
@@ -88,47 +92,56 @@ void printData(vector<vector<LandCell> >& state){
 }
 
 /*
-Helper function to that updates the states through all deterministic changes in the time step. check through all states and deplete fire by 1.
+Helper function to that updates the states through all deterministic changes in the time step. 
+Check through all states and deplete fire by 1.
 If there is no more fire, then we set the boolean equal to 0.
 */
 void runDetForward(vector<vector<LandCell> >& state, vector<populatedArea>& actionSpace){
+	// Deplete fire and check if there is still a fire
 	for(int i = 0; i < state.size(); i++){
 		for(int j = 0; j < state[0].size(); j++)
-			if (state[i][j].fire){
+			if (state[i][j].fire) {
 				state[i][j].fuel = max(double(0), state[i][j].fuel - 1);
-				if(!state[i][j].fuel){
+				if (!state[i][j].fuel) {
 					state[i][j].fire = false;
 				}
 			}
 	}
 
+	// Decrease amount of time remaining for populated areas if already evacuating
 	for(int i = 0; i < actionSpace.size(); i++){
-		if(actionSpace[i].evacuating && actionSpace[i].remainingTime) actionSpace[i].remainingTime--;
+		if (actionSpace[i].evacuating && actionSpace[i].remainingTime) actionSpace[i].remainingTime--;
 	}
 }
 
 
-//Presumes fire can only spread across five cells
+/*
+At each point in the grid world, determine if there will be a fire by looking at the amount of fuel and the surrounding states.
+*/
 vector<vector<LandCell> > sampleNextState(vector<vector<LandCell> >& state, double distanceConstant){
 
-	//random_device rd;
-	//mt19937 gen(rd());
+	// Create new state and set observation distance
 	vector<vector<LandCell> > newState = state;
 	int observationDistance = 2;
-	//Goes through each point
-	for(int i = 0; i < state.size(); i++){
-		for(int j = 0; j < state[0].size(); j++){
 
-			if(!state[i][j].fire && state[i][j].fuel > 0){
+	// Iterate through each point
+	for (int i = 0; i < state.size(); i++) {
+		for (int j = 0; j < state[0].size(); j++) {
+			
+			// Check whether a certain state doesn't have a fire, but DOES have fuel
+			if (!state[i][j].fire && state[i][j].fuel > 0) {
+
+				// Utilize equation from SISL paper to calculate probability of there being a fire
 				double prob = 1;
-
-				for(int nI = max(0, i - observationDistance); nI < min(int(state.size()), i + observationDistance); nI++){
-					for(int nJ = max(0, j - observationDistance); nJ < min(int(state.size()), j + observationDistance); nJ++){
-						if(i != nI && j != nJ){
+				for (int nI = max(0, i - observationDistance); nI < min(int(state.size()), i + observationDistance); nI++) {
+					for (int nJ = max(0, j - observationDistance); nJ < min(int(state.size()), j + observationDistance); nJ++) {
+						if (i != nI && j != nJ) {
 							prob *= 1 - (distanceConstant * pow(1.0 / calculateDistance(i, j, nI, nJ), 2) * (state[nI][nJ].fire ? 1 : 0));
 						}
 					}
 				}
+
+				// Calculate final probability, and then use a Bernoulli distribution to determine if there will be a fire
 				prob = 1 - prob;
 				bernoulli_distribution b(prob);
 				newState[i][j].fire = b(gen);
@@ -139,7 +152,9 @@ vector<vector<LandCell> > sampleNextState(vector<vector<LandCell> >& state, doub
 	return newState;
 }
 
-//Presumes fire can only spread across five cells
+/*
+PLACEHOLDER: shows how to update in place, since passing in by reference
+*/
 vector<vector<vector<LandCell> > > sampleNextStates(vector<vector<LandCell> >& state, double distanceConstant, int total){
 	vector<vector<vector<LandCell> > > futureStates;
 
@@ -195,15 +210,22 @@ vector<vector<vector<LandCell> > > sampleNextStates(vector<vector<LandCell> >& s
 	return futureStates;
 }
 
-//Presumes a negative 100 reward for having a populated state and 1 reward for not evacuating
+/*
+Function to calculate the total utility of all of the states
+TO-DO: should the first check see whether or not the action space is evacuating?
+TO-DO: should the second case consider whether or not the spot is on fire but they are not evacuated?
+*/
 int getStateUtility(vector<vector<LandCell> >& state, vector<populatedArea>& actionSpace){
 	int reward = 0;
-	for(int i = 0; i < actionSpace.size(); i++){
-		if(actionSpace[i].remainingTime && state[actionSpace[i].i][actionSpace[i].j].fire){
+	for(int i = 0; i < actionSpace.size(); i++) {
+		// If the populated area still has remaining time left, but the area is already on fire, incur -100 reward.
+		if (actionSpace[i].remainingTime && state[actionSpace[i].i][actionSpace[i].j].fire){
 			reward -= 100;
 			actionSpace[i].remainingTime = 0;
 		}
-		else if(!actionSpace[i].evacuating){
+
+		// If the current populated area is not evacuating, add 1 reward
+		else if (!actionSpace[i].evacuating) {
 			reward += 1;
 		}
 	}
@@ -215,7 +237,7 @@ int getStateUtility(vector<vector<LandCell> >& state, vector<populatedArea>& act
 * First is action -1 means do nothing, i means begin evacuation of the i'th area in the actionSpace
 * Important that we aren't passive the action space by reference
 */
-pair<int,int> sparseSampling(vector<vector<LandCell> >& state, vector<populatedArea> actionSpace){
+pair<int,int> sparseSampling(vector<vector<LandCell> >& state, vector<populatedArea> actionSpace) {
 	//The base reward this state must get
 	int reward = getStateUtility(state, actionSpace);
 	
@@ -224,35 +246,36 @@ pair<int,int> sparseSampling(vector<vector<LandCell> >& state, vector<populatedA
 
 }
 
-void runSimulation(int gridDim, double distanceConstant, int burnRate){
+/*
+Main function that controls the simulation
+*/
+void runSimulation(int gridDim, double distanceConstant, int burnRate) {
+	// Set up randomness
 	random_device rd;
     mt19937 gen(rd());
-	//Various hyperparameters
+
+	// Various hyperparameters
 	int timeToEvacuate = 4;
 
-
-
+	// Create the state of the simulation
 	vector<vector<LandCell> > state(gridDim, vector<LandCell>(gridDim, LandCell()));
 
-	//Manually place down populated areas
+	// Create an action space of populated areas
 	vector<populatedArea> actionSpace;
-	populatedArea bruh;
-	bruh.i  = 4;
-	bruh.j = 9;
-	bruh.evacuating = false;
-	bruh.remainingTime = timeToEvacuate;
 	actionSpace.push_back({4, 9, false, timeToEvacuate});
 	actionSpace.push_back({2, 1, false, timeToEvacuate});
+
+	// Indicate populated areas also on game state
 	state[4][9].populated = true;
 	state[2][1].populated = true;
 	
-	//Places initial fire seeds
+	// Places initial fire seeds
 	int burnCount = 2;
 	for(int i = 0; i < burnCount; i++){
 		state[rand() % gridDim][rand() % gridDim].fire = true;
 	}
 
-	//Sets fuel levels
+	// Sets fuel levels
 	normal_distribution<double> normal(10, 3);
 	for(int i = 0; i < state.size(); i++){
 		for(int j = 0; j < state[0].size(); j++){
@@ -260,20 +283,15 @@ void runSimulation(int gridDim, double distanceConstant, int burnRate){
 		}
 	}
 
-	//sampleNextStates(state, distanceConstant, 10);
-
-	//Runs for x timesteps
-	for(int i = 0; i < 30; i++){
+	// Run simulation for x timesteps
+	for (int i = 0; i < 30; i++) {
 		runDetForward(state, actionSpace);
 		state = sampleNextState(state, distanceConstant);
-		if(i % 5 == 0){
+		if (i % 5 == 0) {
 			printData(state);
 			cout << endl;
 		}
 	}
-
-	
-
 }
 
 int main()
