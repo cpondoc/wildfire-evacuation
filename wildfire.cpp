@@ -235,15 +235,39 @@ int getStateUtility(vector<vector<LandCell> >& state, vector<populatedArea>& act
 
 /*
 * First is action -1 means do nothing, i means begin evacuation of the i'th area in the actionSpace
-* Important that we aren't passive the action space by reference
+* Important that we aren't passing the action space by reference
 */
-pair<int,int> sparseSampling(vector<vector<LandCell> >& state, vector<populatedArea> actionSpace) {
-	//The base reward this state must get
-	int reward = getStateUtility(state, actionSpace);
-	
+pair<int,int> sparseSampling(vector<vector<LandCell> > state, vector<populatedArea> actionSpace, int depth, int samples, double distanceConstant) {
+	// Standalone scenario -- doing nothing
+	pair<int, int> best = {-1, getStateUtility(state, actionSpace)};
 
-	return {-1, reward};
+	// Base case: depth = 0, so we return doing nothing and the utility of being in the state
+	if (depth == 0) {
+		return best;
+	}
 
+	// Recursive case: iterate through each action (each i'th area of evacuation)
+	for (int i = 0; i < actionSpace.size(); i++) {
+		// Generate a sample for each and update the utility
+		int utility = 0;
+		for (int j = 0; j < samples; j++) {
+			// Sample a new state and reward
+			vector<vector<LandCell> > sampledState = sampleNextState(state, distanceConstant);
+			int sampledReward = getStateUtility(sampledState, actionSpace);
+			
+			// Call sparse sampling recursively and update utility (assume undiscounted)
+			pair<int, int> returnPair = sparseSampling(sampledState, actionSpace, depth - 1, samples, distanceConstant);
+			utility += (sampledReward + returnPair.second) / samples; 
+		}
+
+		// Check if utility is better than current best
+		if (utility > best.second) {
+			best = {i, utility};
+		}
+	}
+
+	// Return best
+	return best;
 }
 
 /*
@@ -282,6 +306,10 @@ void runSimulation(int gridDim, double distanceConstant, int burnRate) {
 			state[i][j].fuel = max(double(0), normal(gen));
 		}
 	}
+
+	// Run sparse sampling
+	pair<int, int> best = sparseSampling(state, actionSpace, 1, 5, distanceConstant);
+	cout << "Action: " << best.first << " | Utility: " << best.second << endl;
 
 	// Run simulation for x timesteps
 	for (int i = 0; i < 30; i++) {
