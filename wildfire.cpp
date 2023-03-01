@@ -208,11 +208,11 @@ Function to calculate the total utility of all of the states
 TO-DO: should the first check see whether or not the action space is evacuating?
 TO-DO: should the second case consider whether or not the spot is on fire but they are not evacuated?
 */
-int getStateUtility(vector<vector<LandCell> >& state, vector<populatedArea>& actionSpace){
+int getStateUtility(vector<vector<LandCell> >& state, vector<populatedArea>& actionSpace) {
 	int reward = 0;
-	for(int i = 0; i < actionSpace.size(); i++) {
+	for (int i = 0; i < actionSpace.size(); i++) {
 		// If the populated area still has remaining time left, but the area is already on fire, incur -100 reward.
-		if (actionSpace[i].remainingTime && state[actionSpace[i].i][actionSpace[i].j].fire){
+		if (actionSpace[i].remainingTime && state[actionSpace[i].i][actionSpace[i].j].fire) {
 			reward -= 100;
 			actionSpace[i].remainingTime = 0;
 		}
