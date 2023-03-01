@@ -65,13 +65,6 @@ void drawGridworld(int gridDim) {
 }
 
 /*
-Function to help with boolean variable signaling of cell burning
-*/
-bool isCellBurning() {
-	return ((rand() % 10 + 1) % 2 == 0);
-}
-
-/*
 Function to calculte Euclidean distance between two points
 */
 double calculateDistance(int xOne, int yOne, int xTwo, int yTwo) {
@@ -234,8 +227,9 @@ int getStateUtility(vector<vector<LandCell> >& state, vector<populatedArea>& act
 }
 
 /*
-* First is action -1 means do nothing, i means begin evacuation of the i'th area in the actionSpace
-* Important that we aren't passing the action space by reference
+Implements sparse sampling to approximate the value function. Note that we have the following action space:
+-"-1" means to do nothing
+-"i" means to evacuate the "i'th" area in the actionSpace vector of populated areas.
 */
 pair<int,int> sparseSampling(vector<vector<LandCell> > state, vector<populatedArea> actionSpace, int depth, int samples, double distanceConstant) {
 	// Standalone scenario -- doing nothing
@@ -322,65 +316,21 @@ void runSimulation(int gridDim, double distanceConstant, int burnRate) {
 	}
 }
 
+/*
+Calls main functions!
+TO-DO: make the hyperparameters global?
+*/
 int main()
 {	
-	// Initialize random seed, grid dimension, and constant for proportionality of distance
+	// Initialize random seed, grid dimension, and hyperparameters
 	srand (time(NULL));
 	int gridDim = 10;
 	double distanceConstant = 2;
     int burnRate = 5;
 	
-	/*
-	Initial stochastic model for fuel of a cell
-	*/
-	cout << "Modeling of amount of fuel!" << endl << endl;
-	    
+	// Running simulation
+	cout << "Initially running the simulation" << endl << endl;
 	runSimulation(gridDim, distanceConstant, burnRate);
-	exit(0);
-    // Defining burning rate
-    int totalFuel = 50;
-    
-    // Changing of the amout of fuel
-    for (int i = 0; i < 10; i++) {
-		// Check if cell is burning and reduce accordingly
-    	if (isCellBurning()) {
-    		totalFuel = max(0, totalFuel - burnRate);
-		}
-		
-		cout << "Remaining fuel left: " << totalFuel << endl;
-	}
-	
-	/*
-	Initial stochastic model for movement of the fire
-	*/
-	cout << endl << "Modeling spread of the fire!" << endl << endl;
-	
-	// Generate random points on the plane
-	int x = rand() % gridDim;
-	int y = rand() % gridDim;
-	
-	// Investigate all existing points around it
-	int pointsAround[8][2] = {{x + 1, y}, {x - 1, y}, {x, y + 1}, {x, y - 1}, {x + 1, y + 1}, {x + 1, y - 1}, {x - 1, y - 1}, {x - 1, y + 1}};
-	double probSpread = 1;
-	for (int i = 0; i < 8; i++) {
-		// Determine if current cell is burning
-		bool currBurning = isCellBurning();
-		
-		// Check to see if we can multiply this probability
-		if ((0 <= pointsAround[i][0] && pointsAround[i][0] < gridDim) && (0 <= pointsAround[i][1] && pointsAround[i][1] < gridDim)) {
-			double pointDistance = distanceConstant * calculateDistance(x, y, pointsAround[i][0], pointsAround[i][1]);
-			probSpread *= 1 - (pow(double(1 / pointDistance), 2) * currBurning);
-		}
-		
-	}
-	
-	// Simple if to check for fuel and to subtract
-	cout << "Probability of igniting based on proximity to burning cells: ";
-    if (totalFuel > 0) {
-    	cout << double(1) - probSpread << endl;
-	} else {
-		cout << 0 << endl;
-	}
     
     return 0;
 }
