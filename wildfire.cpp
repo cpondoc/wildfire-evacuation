@@ -77,7 +77,13 @@ Currently a replacement for `drawGridworld` -- helps to visualize the look of th
 void printData(vector<vector<LandCell> >& state){
 	for(int i = 0; i < state.size(); i++){
 		for(int j = 0; j < state[0].size(); j++){
-			cout << state[i][j].fire << " ";
+			if (state[i][j].fire) {
+				cout << "F" << " ";
+			} else if (state[i][j].populated) {
+				cout << "P" << " ";
+			} else {
+				cout << "_" << " ";
+			}
 		}
 		cout << endl;
 	}
@@ -91,8 +97,8 @@ If there is no more fire, then we set the boolean equal to 0.
 */
 void runDetForward(vector<vector<LandCell> >& state, vector<populatedArea>& actionSpace){
 	// Deplete fire and check if there is still a fire
-	for(int i = 0; i < state.size(); i++){
-		for(int j = 0; j < state[0].size(); j++)
+	for (int i = 0; i < state.size(); i++) {
+		for (int j = 0; j < state[0].size(); j++)
 			if (state[i][j].fire) {
 				state[i][j].fuel = max(double(0), state[i][j].fuel - 1);
 				if (!state[i][j].fuel) {
@@ -265,6 +271,21 @@ pair<int,int> sparseSampling(vector<vector<LandCell> > state, vector<populatedAr
 }
 
 /*
+Function to actually take an action after sampling a state
+*/
+void takeAction(int action, vector<vector<LandCell> >& state, vector<populatedArea>& actionSpace) {
+	// Only take an action if the action is not to do nothing
+	if (action != -1) {
+		// Get the current cell, and make populated equal to false
+		populatedArea currCell = actionSpace[action];
+		state[currCell.i][currCell.j].populated = false;
+
+		// Delete other cell from actionSpace array
+		actionSpace.erase(actionSpace.begin() + action);
+	}
+}
+
+/*
 Main function that controls the simulation
 */
 void runSimulation(int gridDim, double distanceConstant, int burnRate) {
@@ -301,18 +322,19 @@ void runSimulation(int gridDim, double distanceConstant, int burnRate) {
 		}
 	}
 
-	// Run sparse sampling
-	pair<int, int> best = sparseSampling(state, actionSpace, 1, 5, distanceConstant);
-	cout << "Action: " << best.first << " | Utility: " << best.second << endl;
-
 	// Run simulation for x timesteps
 	for (int i = 0; i < 30; i++) {
+		// Run the next state forward and sample the next state
 		runDetForward(state, actionSpace);
 		state = sampleNextState(state, distanceConstant);
-		if (i % 5 == 0) {
-			printData(state);
-			cout << endl;
-		}
+
+		// Run sparse sampling and take the next action
+		pair<int, int> best = sparseSampling(state, actionSpace, 1, 5, distanceConstant);
+		takeAction(best.first, state, actionSpace);
+		
+		// Print state (since we know the fire is going crazy right now)
+		printData(state);
+		cout << endl;
 	}
 }
 
