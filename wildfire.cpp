@@ -91,7 +91,7 @@ void printData(vector<vector<LandCell> >& state){
 }
 
 /*
-Helper function to that updates the states through all deterministic changes in the time step. 
+Helper function that updates the states through all deterministic changes in the time step. 
 Check through all states and deplete fire by 1.
 If there is no more fire, then we set the boolean equal to 0.
 */
@@ -109,7 +109,10 @@ void runDetForward(vector<vector<LandCell> >& state, vector<populatedArea>& acti
 
 	// Decrease amount of time remaining for populated areas if already evacuating
 	for(int i = 0; i < actionSpace.size(); i++){
-		if (actionSpace[i].evacuating && actionSpace[i].remainingTime) actionSpace[i].remainingTime--;
+		if (actionSpace[i].evacuating && actionSpace[i].remainingTime) {
+			actionSpace[i].remainingTime--;
+			if(!actionSpace[i].remainingTime) state[actionSpace[i].i][actionSpace[i].j].populated = false;
+		}
 	}
 }
 
@@ -134,8 +137,9 @@ vector<vector<LandCell> > sampleNextState(vector<vector<LandCell> >& state, doub
 				double prob = 1;
 				for (int nI = max(0, i - observationDistance); nI < min(int(state.size()), i + observationDistance); nI++) {
 					for (int nJ = max(0, j - observationDistance); nJ < min(int(state.size()), j + observationDistance); nJ++) {
-						if (i != nI && j != nJ) {
-							prob *= 1 - (distanceConstant * pow(1.0 / calculateDistance(i, j, nI, nJ), 2) * (state[nI][nJ].fire ? 1 : 0));
+						if (i != nI && j != nJ && state[nI][nJ].fire) {
+							prob *= 1 - (distanceConstant * pow(1.0 / calculateDistance(i, j, nI, nJ), 2));
+							//prob *= 1 - (distanceConstant * pow(1.0 / calculateDistance(i, j, nI, nJ), 2) * (state[nI][nJ].fire ? 1 : 0));
 						}
 					}
 				}
@@ -221,10 +225,11 @@ int getStateUtility(vector<vector<LandCell> >& state, vector<populatedArea>& act
 		if (actionSpace[i].remainingTime && state[actionSpace[i].i][actionSpace[i].j].fire) {
 			reward -= 100;
 			actionSpace[i].remainingTime = 0;
+			state[actionSpace[i].i][actionSpace[i].j].populated = false;
 		}
 
 		// If the current populated area is not evacuating, add 1 reward
-		else if (!actionSpace[i].evacuating) {
+		else if (!actionSpace[i].evacuating && actionSpace[i].remainingTime) {
 			reward += 1;
 		}
 	}
@@ -346,7 +351,7 @@ int main()
 {	
 	// Initialize random seed, grid dimension, and hyperparameters
 	srand (time(NULL));
-	int gridDim = 10;
+	int gridDim = 100;
 	double distanceConstant = 2;
     int burnRate = 5;
 	
