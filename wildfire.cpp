@@ -108,10 +108,12 @@ void runDetForward(vector<vector<LandCell> >& state, vector<populatedArea>& acti
 	}
 
 	// Decrease amount of time remaining for populated areas if already evacuating
-	for(int i = 0; i < actionSpace.size(); i++){
+	for (int i = 0; i < actionSpace.size(); i++){
 		if (actionSpace[i].evacuating && actionSpace[i].remainingTime) {
 			actionSpace[i].remainingTime--;
-			if(!actionSpace[i].remainingTime) state[actionSpace[i].i][actionSpace[i].j].populated = false;
+			if (!actionSpace[i].remainingTime) {
+				state[actionSpace[i].i][actionSpace[i].j].populated = false;
+			}
 		}
 	}
 }
@@ -156,64 +158,6 @@ vector<vector<LandCell> > sampleNextState(vector<vector<LandCell> >& state, doub
 }
 
 /*
-PLACEHOLDER: shows how to update in place, since passing in by reference
-*/
-vector<vector<vector<LandCell> > > sampleNextStates(vector<vector<LandCell> >& state, double distanceConstant, int total){
-	vector<vector<vector<LandCell> > > futureStates;
-
-	vector<vector<double> > probabilities(state.size(), vector<double>(state[0].size()));
-	int observationDistance = 2;
-	//Goes through each point to build probability of there being a fire
-	for(int i = 0; i < state.size(); i++){
-		for(int j = 0; j < state[0].size(); j++){
-
-			if(!state[i][j].fire && state[i][j].fuel > 0){
-				double prob = 1;
-
-				for(int nI = max(0, i - observationDistance); nI < min(int(state.size()), i + observationDistance); nI++){
-					for(int nJ = max(0, j - observationDistance); nJ < min(int(state.size()), j + observationDistance); nJ++){
-						if(i != nI && j != nJ){
-							prob *= 1 - (pow(1.0 / calculateDistance(i, j, nI, nJ) / distanceConstant, 2) * (state[nI][nJ].fire ? 1 : 0));
-						}
-					}
-				}
-				prob = 1 - prob;
-				probabilities[i][j] = prob;
-			}
-			else
-				probabilities[i][j] = 0;
-		}
-	}
-
-	//Builds a future sample for each 
-	for(int t = 0; t < total; t++){
-
-		futureStates.push_back(vector<vector<LandCell> >(state.size(), vector<LandCell>(state[0].size())));
-		
-		// Uses Bernoulli distribution in order to model if a fire exists or doesn't exist at a certain place
-		for(int i = 0; i < state.size(); i++){
-			for(int j = 0; j < state[0].size(); j++){
-				futureStates[futureStates.size() - 1][i][j] = state[i][j];
-				if(!state[i][j].fire){
-					bernoulli_distribution b(probabilities[i][j]);
-					futureStates[futureStates.size() - 1][i][j].fire = b(gen);
-				}
-				
-			}
-		}
-	}
-
-	for(int i = 0 ; i < total; i++){
-		printData(futureStates[i]);
-		cout << endl;
-	}
-
-	exit(0);
-
-	return futureStates;
-}
-
-/*
 Function to calculate the total utility of all of the states
 TO-DO: should the first check see whether or not the action space is evacuating?
 TO-DO: should the second case consider whether or not the spot is on fire but they are not evacuated?
@@ -223,6 +167,7 @@ int getStateUtility(vector<vector<LandCell> >& state, vector<populatedArea>& act
 	for (int i = 0; i < actionSpace.size(); i++) {
 		// If the populated area still has remaining time left, but the area is already on fire, incur -100 reward.
 		if (actionSpace[i].remainingTime && state[actionSpace[i].i][actionSpace[i].j].fire) {
+			//cout << "IT'S SO OVER" << endl;
 			reward -= 100;
 			actionSpace[i].remainingTime = 0;
 			state[actionSpace[i].i][actionSpace[i].j].populated = false;
@@ -238,56 +183,65 @@ int getStateUtility(vector<vector<LandCell> >& state, vector<populatedArea>& act
 }
 
 /*
+Function to actually take an action after sampling a state
+*/
+vector<populatedArea> takeAction(int action, vector<populatedArea>& actionSpace) {
+
+	vector<populatedArea> newActionSpace = actionSpace;
+	// Only take an action if the action is not to do nothing
+	if (action != -1) {
+		actionSpace[action].evacuating = true;
+	}
+
+	return newActionSpace;
+}
+
+/*
 Implements sparse sampling to approximate the value function. Note that we have the following action space:
 -"-1" means to do nothing
 -"i" means to evacuate the "i'th" area in the actionSpace vector of populated areas.
 */
 pair<int,int> sparseSampling(vector<vector<LandCell> > state, vector<populatedArea> actionSpace, int depth, int samples, double distanceConstant) {
 	// Standalone scenario -- doing nothing
-	pair<int, int> best = {-1, getStateUtility(state, actionSpace)};
+	int stateReward = getStateUtility(state, actionSpace);
+	pair<int, int> best = {-1, INT_MIN};
 
 	// Base case: depth = 0, so we return doing nothing and the utility of being in the state
 	if (depth == 0) {
-		return best;
+		return {-1, stateReward};
 	}
 
 	// Recursive case: iterate through each action (each i'th area of evacuation)
-	for (int i = 0; i < actionSpace.size(); i++) {
+	for (int i = -1; i < (int) actionSpace.size(); i++) {
+		//Ignore already evacuating areas
+		if(i >= 0 && actionSpace[i].evacuating)
+			continue;
 		// Generate a sample for each and update the utility
 		int utility = 0;
+		vector<populatedArea> newActionSpace = takeAction(i, actionSpace);
+		vector<vector<LandCell> > resultantState = state;
+		runDetForward(resultantState, newActionSpace);
+
 		for (int j = 0; j < samples; j++) {
 			// Sample a new state and reward
-			vector<vector<LandCell> > sampledState = sampleNextState(state, distanceConstant);
-			int sampledReward = getStateUtility(sampledState, actionSpace);
+			vector<vector<LandCell> > sampledState = sampleNextState(resultantState, distanceConstant);
 			
 			// Call sparse sampling recursively and update utility (assume undiscounted)
-			pair<int, int> returnPair = sparseSampling(sampledState, actionSpace, depth - 1, samples, distanceConstant);
-			utility += (sampledReward + returnPair.second) / samples; 
+			pair<int, int> returnPair = sparseSampling(sampledState, newActionSpace, depth - 1, samples, distanceConstant);
+			utility += returnPair.second;
 		}
+		//the discount factor
+		utility /= samples;
+		utility *= .99;
 
 		// Check if utility is better than current best
-		if (utility > best.second) {
-			best = {i, utility};
+		if (utility + stateReward > best.second) {
+			best = {i, utility + stateReward};
 		}
 	}
 
 	// Return best
 	return best;
-}
-
-/*
-Function to actually take an action after sampling a state
-*/
-void takeAction(int action, vector<vector<LandCell> >& state, vector<populatedArea>& actionSpace) {
-	// Only take an action if the action is not to do nothing
-	if (action != -1) {
-		// Get the current cell, and make populated equal to false
-		populatedArea currCell = actionSpace[action];
-		state[currCell.i][currCell.j].populated = false;
-
-		// Delete other cell from actionSpace array
-		actionSpace.erase(actionSpace.begin() + action);
-	}
 }
 
 /*
@@ -306,12 +260,12 @@ void runSimulation(int gridDim, double distanceConstant, int burnRate) {
 
 	// Create an action space of populated areas
 	vector<populatedArea> actionSpace;
-	actionSpace.push_back({4, 9, false, timeToEvacuate});
-	actionSpace.push_back({2, 1, false, timeToEvacuate});
+	actionSpace.push_back({30, 24, false, timeToEvacuate});
+	actionSpace.push_back({41, 34, false, timeToEvacuate});
 
 	// Indicate populated areas also on game state
-	state[4][9].populated = true;
-	state[2][1].populated = true;
+	state[30][24].populated = true;
+	state[41][34].populated = true;
 	
 	// Places initial fire seeds
 	int burnCount = 2;
@@ -328,19 +282,25 @@ void runSimulation(int gridDim, double distanceConstant, int burnRate) {
 	}
 
 	// Run simulation for x timesteps
-	for (int i = 0; i < 30; i++) {
+	int actualReward = 0;
+	for (int i = 0; i < 100; i++) {
 		// Run the next state forward and sample the next state
+		int temp = getStateUtility(state, actionSpace);
+		actualReward += temp;
+		//if(temp < 0)
+		//	cout << "We lost them" << endl;
 		runDetForward(state, actionSpace);
 		state = sampleNextState(state, distanceConstant);
 
 		// Run sparse sampling and take the next action
-		pair<int, int> best = sparseSampling(state, actionSpace, 1, 5, distanceConstant);
-		takeAction(best.first, state, actionSpace);
+		pair<int, int> best = sparseSampling(state, actionSpace, 5, 3, distanceConstant);
+		actionSpace = takeAction(best.first, actionSpace);
 		
 		// Print state (since we know the fire is going crazy right now)
-		printData(state);
-		cout << endl;
+		//printData(state);
+		cout << i << endl;
 	}
+	cout << "HEAR YE HEAR YE. THE KING PROCLAIMS OUR FINAL REWARD IS " << actualReward << endl;
 }
 
 /*
