@@ -25,6 +25,7 @@ struct LandCell{
 	bool fire = false;
 	double fuel;
 	bool populated = false;
+	bool has_been_on_fire = false;
 };
 
 /*
@@ -74,11 +75,16 @@ double calculateDistance(int xOne, int yOne, int xTwo, int yTwo) {
 /*
 Currently a replacement for `drawGridworld` -- helps to visualize the look of the canvas
 */
-void printData(vector<vector<LandCell> >& state){
+float printData(vector<vector<LandCell> >& state){
+	float num_affected = 0;
 	for(int i = 0; i < state.size(); i++){
 		for(int j = 0; j < state[0].size(); j++){
 			if (state[i][j].fire) {
 				cout << "F" << " ";
+				num_affected ++; 
+			} else if (state[i][j].has_been_on_fire) {
+				cout << "H" << " ";
+				num_affected ++; 
 			} else if (state[i][j].populated) {
 				cout << "P" << " ";
 			} else {
@@ -87,7 +93,7 @@ void printData(vector<vector<LandCell> >& state){
 		}
 		cout << endl;
 	}
-
+	return num_affected;
 }
 
 /*
@@ -103,6 +109,7 @@ void runDetForward(vector<vector<LandCell> >& state, vector<populatedArea>& acti
 				state[i][j].fuel = max(double(0), state[i][j].fuel - 1);
 				if (!state[i][j].fuel) {
 					state[i][j].fire = false;
+					state[i][j].has_been_on_fire = true;
 				}
 			}
 	}
@@ -252,55 +259,77 @@ void runSimulation(int gridDim, double distanceConstant, int burnRate) {
 	random_device rd;
     mt19937 gen(rd());
 
-	// Various hyperparameters
-	int timeToEvacuate = 3;
+	float total_affected = 0;
+	for (int b = 0; b < 500; b++){
 
-	// Create the state of the simulation
-	vector<vector<LandCell> > state(gridDim, vector<LandCell>(gridDim, LandCell()));
+		// Various hyperparameters
+		int timeToEvacuate = 3;
 
-	// Create an action space of populated areas
-	vector<populatedArea> actionSpace;
-	actionSpace.push_back({11, 4, false, timeToEvacuate});
-	actionSpace.push_back({23, 14, false, timeToEvacuate});
+		// Create the state of the simulation
+		vector<vector<LandCell> > state(gridDim, vector<LandCell>(gridDim, LandCell()));
 
-	// Indicate populated areas also on game state
-	state[11][4].populated = true;
-	state[23][14].populated = true;
-	
-	// Places initial fire seeds
-	int burnCount = 2;
-	for(int i = 0; i < burnCount; i++){
-		state[rand() % gridDim][rand() % gridDim].fire = true;
-	}
+		vector<populatedArea> actionSpace;
+		/* Commented out for tuning
+		// Create an action space of populated areas
+		vector<populatedArea> actionSpace;
+		actionSpace.push_back({11, 4, false, timeToEvacuate});
+		actionSpace.push_back({23, 14, false, timeToEvacuate});
+		*/ 
 
-	// Sets fuel levels
-	normal_distribution<double> normal(10, 3);
-	for(int i = 0; i < state.size(); i++){
-		for(int j = 0; j < state[0].size(); j++){
-			state[i][j].fuel = max(double(0), normal(gen));
-		}
-	}
-
-	// Run simulation for x timesteps
-	int actualReward = 0;
-	for (int i = 0; i < 100; i++) {
-		// Run the next state forward and sample the next state
-		int temp = getStateUtility(state, actionSpace);
-		actualReward += temp;
-		//if(temp < 0)
-		//	cout << "We lost them" << endl;
-		runDetForward(state, actionSpace);
-		state = sampleNextState(state, distanceConstant);
-
-		// Run sparse sampling and take the next action
-		pair<int, int> best = sparseSampling(state, actionSpace, 5, 3, distanceConstant);
-		actionSpace = takeAction(best.first, actionSpace);
+		/* Commented out for tuning
+		// Indicate populated areas also on game state
+		state[11][4].populated = true;
+		state[23][14].populated = true;
+		*/
 		
-		// Print state (since we know the fire is going crazy right now)
-		printData(state);
-		cout << i << endl;
+		// Places initial fire seeds
+		int burnCount = 2;
+		for(int i = 0; i < burnCount; i++){
+			state[rand() % gridDim][rand() % gridDim].fire = true;
+		}
+
+		// Sets fuel levels
+		normal_distribution<double> normal(8, 3);
+		for(int i = 0; i < state.size(); i++){
+			for(int j = 0; j < state[0].size(); j++){
+				state[i][j].fuel = max(double(0), normal(gen));
+			}
+		}
+
+		// Run simulation for x timesteps
+		int actualReward = 0; 
+
+
+		for (int i = 0; i < 100; i++) {
+			// Run the next state forward and sample the next state
+			// int temp = getStateUtility(state, actionSpace); Commented out for tuning
+			// actualReward += temp; Commented out for tuning
+			//if(temp < 0)
+			//	cout << "We lost them" << endl;
+			runDetForward(state, actionSpace); 
+			state = sampleNextState(state, distanceConstant);
+
+			// Run sparse sampling and take the next action
+			//pair<int, int> best = sparseSampling(state, actionSpace, 5, 3, distanceConstant); Commented out for tuning
+			//actionSpace = takeAction(best.first, actionSpace); Commented out for tuning
+			
+			// Print state (since we know the fire is going crazy right now)
+			// if (i == 0 || i == 99) {
+			// int cur_num_affected = printData(state);
+			if (i == 99) {
+				int cur_num_affected = printData(state);
+				cout << cur_num_affected << endl; 
+				total_affected += cur_num_affected; 
+			}
+			//}
+			// cout << i << endl; Commented out for tuning
+		}
+		cout << "" << endl; 
+		// cout << b << endl; 
 	}
-	cout << "HEAR YE HEAR YE. THE KING PROCLAIMS OUR FINAL REWARD IS " << actualReward << endl;
+	float average_affected = total_affected/500; 
+	cout << "Average num affected: " << average_affected << endl; 
+	// cout << "HEAR YE HEAR YE. THE KING PROCLAIMS OUR FINAL REWARD IS " << actualReward << endl; Commented out for tuning
 }
 
 /*
@@ -311,8 +340,8 @@ int main()
 {	
 	// Initialize random seed, grid dimension, and hyperparameters
 	srand (time(NULL));
-	int gridDim = 50;
-	double distanceConstant = 2;
+	int gridDim = 20;
+	double distanceConstant = 0.094;
     int burnRate = 5;
 	
 	// Running simulation
