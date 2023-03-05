@@ -253,19 +253,19 @@ void runSimulation(int gridDim, double distanceConstant, int burnRate) {
     mt19937 gen(rd());
 
 	// Various hyperparameters
-	int timeToEvacuate = 4;
+	int timeToEvacuate = 3;
 
 	// Create the state of the simulation
 	vector<vector<LandCell> > state(gridDim, vector<LandCell>(gridDim, LandCell()));
 
 	// Create an action space of populated areas
 	vector<populatedArea> actionSpace;
-	actionSpace.push_back({30, 24, false, timeToEvacuate});
-	actionSpace.push_back({41, 34, false, timeToEvacuate});
+	actionSpace.push_back({11, 4, false, timeToEvacuate});
+	actionSpace.push_back({23, 14, false, timeToEvacuate});
 
 	// Indicate populated areas also on game state
-	state[30][24].populated = true;
-	state[41][34].populated = true;
+	state[11][4].populated = true;
+	state[23][14].populated = true;
 	
 	// Places initial fire seeds
 	int burnCount = 2;
@@ -297,7 +297,7 @@ void runSimulation(int gridDim, double distanceConstant, int burnRate) {
 		actionSpace = takeAction(best.first, actionSpace);
 		
 		// Print state (since we know the fire is going crazy right now)
-		//printData(state);
+		printData(state);
 		cout << i << endl;
 	}
 	cout << "HEAR YE HEAR YE. THE KING PROCLAIMS OUR FINAL REWARD IS " << actualReward << endl;
@@ -311,7 +311,7 @@ int main()
 {	
 	// Initialize random seed, grid dimension, and hyperparameters
 	srand (time(NULL));
-	int gridDim = 100;
+	int gridDim = 50;
 	double distanceConstant = 2;
     int burnRate = 5;
 	
