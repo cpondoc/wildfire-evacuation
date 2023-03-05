@@ -274,7 +274,7 @@ void runSimulation(int gridDim, double distanceConstant, int burnRate) {
 	}
 
 	// Sets fuel levels
-	normal_distribution<double> normal(10, 3);
+	normal_distribution<double> normal(8, 3);
 	for(int i = 0; i < state.size(); i++){
 		for(int j = 0; j < state[0].size(); j++){
 			state[i][j].fuel = max(double(0), normal(gen));
@@ -312,7 +312,7 @@ int main()
 	// Initialize random seed, grid dimension, and hyperparameters
 	srand (time(NULL));
 	int gridDim = 50;
-	double distanceConstant = 2;
+	double distanceConstant = 0.094;
     int burnRate = 5;
 	
 	// Running simulation
