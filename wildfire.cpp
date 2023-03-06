@@ -261,11 +261,11 @@ void runSimulation(int gridDim, double distanceConstant, int burnRate) {
 	// Create an action space of populated areas
 	vector<populatedArea> actionSpace;
 	actionSpace.push_back({11, 4, false, timeToEvacuate});
-	actionSpace.push_back({23, 14, false, timeToEvacuate});
+	actionSpace.push_back({3, 14, false, timeToEvacuate});
 
 	// Indicate populated areas also on game state
 	state[11][4].populated = true;
-	state[23][14].populated = true;
+	state[3][14].populated = true;
 	
 	// Places initial fire seeds
 	int burnCount = 2;
