@@ -79,6 +79,9 @@ void printData(vector<vector<LandCell> >& state){
 		for(int j = 0; j < state[0].size(); j++){
 			if (state[i][j].fire) {
 				cout << "F" << " ";
+				//Check check up
+				if(state[i][j].populated)
+					cout << "This code is broken :/" << endl;
 			} else if (state[i][j].populated) {
 				cout << "P" << " ";
 			} else {
@@ -311,7 +314,7 @@ int main()
 {	
 	// Initialize random seed, grid dimension, and hyperparameters
 	srand (time(NULL));
-	int gridDim = 50;
+	int gridDim = 20;
 	double distanceConstant = 0.094;
     int burnRate = 5;
 	
