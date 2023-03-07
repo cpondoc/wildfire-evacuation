@@ -2,3 +2,4 @@
 helloworld.dSYM/
 wildfire.dSYM/
 .DS_Store
+build/
