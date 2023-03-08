@@ -17,6 +17,7 @@ class FireEnvironment{
 	public:
 	int timeStep = 0;
 	int nextReward;
+	double distanceConstant;
 	/*
 	Struct to represent a land cell. It currently contains...
 	-A boolean to represent if there is a fire
@@ -231,7 +232,7 @@ class FireEnvironment{
 		// Various hyperparameters
 		srand (time(NULL));
 		int timeToEvacuate = 3;
-		double distanceConstant = 0.094;
+		distanceConstant = 0.094;
 
 		//INITIALIZE STATE
 		// Places initial fire seeds
@@ -255,6 +256,8 @@ class FireEnvironment{
 		for(int i = 0; i < evacuationPaths.size(); i++){
 			for(int j = 0; j < evacuationPaths[i].pathLocations.size(); j++){
 				pathedAreas[evacuationPaths[i].pathLocations[j].first][evacuationPaths[i].pathLocations[j].second] = i;
+				if(state[evacuationPaths[i].pathLocations[j].first][evacuationPaths[i].pathLocations[j].second].fire)
+					evacuationPaths[i].active = false;
 			}
 		}
 
@@ -270,15 +273,18 @@ class FireEnvironment{
 
 	}
 
+	//Maybe don't pass in parameters and only change by reference
 	void returnState(){
 		depleteFuel(state, actionSpace);
-		
-
+		state = sampleNextState(state, distanceConstant, pathedAreas, evacuationPaths);
+		updateActionSpace(state, actionSpace, evacuationPaths);
+		nextReward = getStateUtility(state, actionSpace);
 		
 	}
 
-	void inputAction(){
-
+	int inputAction(int first, int second){
+		actionSpace = takeAction({first, second}, actionSpace);
+		
 	}
 
 };
