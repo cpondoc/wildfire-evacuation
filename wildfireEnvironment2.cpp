@@ -320,7 +320,7 @@ class FireEnvironment{
 
 
 
-PYBIND11_MODULE(wildfire_test, handle) {
+PYBIND11_MODULE(fire_environment, handle) {
 	handle.doc() = "Wrapper for fire simulation";
 
 	py::class_<FireEnvironment>(

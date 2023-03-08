@@ -1,5 +1,6 @@
 import gym
 from gym import spaces
+import build.fire_environment
 
 class WildfireEnv(gym.Env):
     def __init__(self):
@@ -16,3 +17,5 @@ class WildfireEnv(gym.Env):
         # Action space eventually has to be:
         # (# of populated areas, # of discrete actions to take)
         self.action_space = spaces.Tuple(spaces.Discrete(4), spaces.Discrete(2))
+
+print("Hey there!")
