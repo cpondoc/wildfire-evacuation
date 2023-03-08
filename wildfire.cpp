@@ -14,6 +14,17 @@ Initial start with modeling wildfire spread!
 
 using namespace std;
 
+namespace py = pybind11;
+
+void tryFunction() {
+	cout << "Hi";
+}
+
+PYBIND11_MODULE(wildfire_test, handle) {
+	handle.doc() = "Chris Pondoc is the GOAT";
+	handle.def("some_function", &tryFunction);
+}
+
 random_device rd;
 mt19937 gen(rd());
 

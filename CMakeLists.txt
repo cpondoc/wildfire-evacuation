@@ -1,8 +1,6 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.4...3.18)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
-
+project(wildfire_test)
 add_subdirectory(pybind11)
-
-project(Wildfire)
-add_executable(Wildfire wildfire.cpp)
+pybind11_add_module(wildfire_test wildfire.cpp)
