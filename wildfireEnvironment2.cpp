@@ -61,6 +61,8 @@ class FireEnvironment{
 	vector<populatedArea> actionSpace;
 	//Takes in coordinates and says if a path is located there
 	unordered_map<int, unordered_map<int, int> > pathedAreas;
+	//The numpy array representation of our state space for returning
+	vector<vector<vector<float> > > ret;
 
 	/*
 	Function to calculate Euclidean distance between two points
@@ -72,7 +74,7 @@ class FireEnvironment{
 	/*
 	Currently a replacement for `drawGridworld` -- helps to visualize the look of the canvas
 	*/
-	void printData(vector<vector<LandCell> >& state){
+	void printData(/*vector<vector<LandCell> >& state*/){
 		for(int i = 0; i < state.size(); i++){
 			for(int j = 0; j < state[0].size(); j++){
 				if (state[i][j].fire) {
@@ -118,6 +120,7 @@ class FireEnvironment{
 					actionSpace[i].remainingTime = INT_MAX;
 					actionSpace[i].evacuating = false;
 					actionSpace[i].currentPath = nullptr;
+					ret[3][actionSpace[i].i][actionSpace[i].j] = 0;
 				}
 				else{
 					actionSpace[i].remainingTime--;
@@ -165,7 +168,11 @@ class FireEnvironment{
 
 					//Sees if a newly fired area is part of a path
 					if(newState[i][j].fire && pathedAreas.find(i) != pathedAreas.end() && pathedAreas[i].find(j) != pathedAreas[i].end()){
-						evacuationPaths[pathedAreas[i][j]].active = false;
+						int index = pathedAreas[i][j];
+						evacuationPaths[index].active = false;
+						for(int x = 0; x < evacuationPaths[index].pathLocations.size(); x++){
+							ret[4][evacuationPaths[index].pathLocations[x].first][evacuationPaths[index].pathLocations[x].second] = 0;
+						}
 					}
 				}
 			}
@@ -214,6 +221,7 @@ class FireEnvironment{
 			newActionSpace[i].currentPath = newActionSpace[i].availablePathsToTake[j];
 			newActionSpace[i].evacuating = true;
 			newActionSpace[i].remainingTime = newActionSpace[i].availablePathsToTake[j]->evacuationTime;
+			ret[3][i][j] = 1;
 		}
 
 		return newActionSpace;
@@ -228,7 +236,9 @@ class FireEnvironment{
 	// Create an action space of populated areas
 	//vector<populatedArea> actionSpace;
 	//unordered_map<int, unordered_map<int, int> > pathedAreas;
-	FireEnvironment(int gridDim) : evacuationPaths(), state(gridDim, vector<LandCell>(gridDim, LandCell())), actionSpace(), pathedAreas() {
+	//vector<vector<vector<float> > > ret;
+	FireEnvironment(int gridDim) : evacuationPaths(), state(gridDim, vector<LandCell>(gridDim, LandCell())),
+		 actionSpace(), pathedAreas(), ret(5, vector<vector<float> >(state.size(), vector<float>(state[0].size(), 0))) {
 		// Various hyperparameters
 		srand (time(NULL));
 		int timeToEvacuate = 3;
@@ -259,6 +269,10 @@ class FireEnvironment{
 				if(state[evacuationPaths[i].pathLocations[j].first][evacuationPaths[i].pathLocations[j].second].fire)
 					evacuationPaths[i].active = false;
 			}
+				
+			for(int j = 0; j < evacuationPaths[i].pathLocations.size(); j++){
+				ret[4][evacuationPaths[i].pathLocations[j].first][evacuationPaths[i].pathLocations[j].second] = evacuationPaths[i].active;
+			}
 		}
 
 
@@ -274,20 +288,68 @@ class FireEnvironment{
 	}
 
 	//Maybe don't pass in parameters and only change by reference
-	void returnState(){
+	vector<vector<vector<float> > > returnState(){
 		depleteFuel(state, actionSpace);
 		state = sampleNextState(state, distanceConstant, pathedAreas, evacuationPaths);
 		updateActionSpace(state, actionSpace, evacuationPaths);
 		nextReward = getStateUtility(state, actionSpace);
 		
+		//We have run the updates. Now let's put that badboy in a numpy array shape=(5,gridDim,gridDim)
+
+		//represents on fire or not
+		for(int i = 0; i < state.size(); i++){
+			for(int j = 0; j < state[0].size(); j++){
+				ret[0][i][j] = state[i][j].fire;
+				ret[1][i][j] = state[i][j].fuel;
+				ret[2][i][j] = state[i][j].populated;
+			}
+		}
+
+		return ret;
 	}
 
 	int inputAction(int first, int second){
 		actionSpace = takeAction({first, second}, actionSpace);
 		
+		return nextReward;
 	}
 
 };
+
+
+
+PYBIND11_MODULE(wildfire_test, handle) {
+	handle.doc() = "Wrapper for fire simulation";
+
+	py::class_<FireEnvironment>(
+		handle, "FireEnvironment"
+	)
+
+	.def(py::init<int>())
+
+	//Debugging purposes where we print the internal state of our simulator
+	.def("printData", [](FireEnvironment& self){
+			self.printData();
+		}
+
+	)
+
+	//
+	.def("getState", [](FireEnvironment& self){
+			py::array out = py::cast(self.returnState());
+			return out;
+		}
+	
+	)
+	.def("inputAction", [](FireEnvironment& self, int first, int second){
+			return self.inputAction(first, second);
+		}
+	
+	)
+	;
+}
+
+
 
 
 
@@ -331,6 +393,5 @@ TO-DO: make the hyperparameters global?
 int main()
 {	
 	FireEnvironment temp = FireEnvironment(20);
-    
     return 0;
 }
