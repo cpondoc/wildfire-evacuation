@@ -222,12 +222,16 @@ void runSimulation(int gridDim, double distanceConstant, int burnRate) {
 	// Various hyperparameters
 	int timeToEvacuate = 3;
 
+	//Create the paths
+	vector<evacuationPath*> evacuationPaths;
+	
+
 	// Create the state of the simulation
 	vector<vector<LandCell> > state(gridDim, vector<LandCell>(gridDim, LandCell()));
 
 	// Create an action space of populated areas
 	vector<populatedArea> actionSpace;
-	actionSpace.push_back({11, 4, false, timeToEvacuate});
+	actionSpace.push_back({11, 4, false, INT_MAX, });
 	actionSpace.push_back({3, 14, false, timeToEvacuate});
 
 	// Indicate populated areas also on game state
