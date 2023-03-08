@@ -62,6 +62,8 @@ class FireEnvironment{
 	//Takes in coordinates and says if a path is located there
 	unordered_map<int, unordered_map<int, int> > pathedAreas;
 	//The numpy array representation of our state space for returning
+	//ret[x][i][j] refers to element located at (i,j) and the x'th feature
+	//0=fire, 1=fuel, 2=populated, 3=evacuating, 4=path
 	vector<vector<vector<float> > > ret;
 
 	/*
