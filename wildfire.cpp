@@ -10,6 +10,7 @@ Initial start with modeling wildfire spread!
 #include <time.h>
 #include <vector>
 #include <random> 
+#include <pybind11/pybind11.h>
 
 using namespace std;
 
