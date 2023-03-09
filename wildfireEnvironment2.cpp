@@ -95,6 +95,14 @@ class FireEnvironment{
 
 	}
 
+	vector<int> returnActionSpace() {
+		vector<int> possibleStates;
+		for (int i = 0; i < actionSpace.size(); i++) {
+			possibleStates.push_back(actionSpace[i].availablePathsToTake.size());
+		}
+		return possibleStates;
+	}
+
 	/*
 	Helper function that updates the states through all deterministic changes in the time step. 
 	Check through all states and deplete fire by 1.
@@ -330,20 +338,27 @@ PYBIND11_MODULE(fire_environment, handle) {
 	.def(py::init<int>())
 
 	//Debugging purposes where we print the internal state of our simulator
-	.def("printData", [](FireEnvironment& self){
+	.def("printData", [](FireEnvironment& self) {
 			self.printData();
 		}
 
 	)
 
+	// Return action state to use
+	.def("getActions", [](FireEnvironment& self) {
+			return self.returnActionSpace();
+		}
+
+	)
+
 	//
-	.def("getState", [](FireEnvironment& self){
+	.def("getState", [](FireEnvironment& self) {
 			py::array out = py::cast(self.returnState());
 			return out;
 		}
 	
 	)
-	.def("inputAction", [](FireEnvironment& self, int first, int second){
+	.def("inputAction", [](FireEnvironment& self, int first, int second) {
 			return self.inputAction(first, second);
 		}
 	
