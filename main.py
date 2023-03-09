@@ -13,7 +13,29 @@ class WildfireEnv(gym.Env):
 
         # Set the action space
         actions = self.fire_env.getActions()
-        self.action_space = spaces.Tuple((spaces.Discrete(len(actions)), spaces.Discrete(max(actions))))
+        self.action_space = spaces.Tuple((spaces.Discrete(len(actions) + 1, start=-1), spaces.Discrete(max(actions), start=0)))
+    
+    def step(self, action):
+        # Call C++ function to take the action
+        self.fire_env.inputAction(action[0], action[1])
 
+        # Gather the observations, rewards, terminated, and truncated
+        observations = self.fire_env.getState()
+        rewards = self.fire_env.getReward()
+        terminated = self.fire_env.getTerminated()
+        truncated = False
+        
+        # Return necessary 4 tuple
+        return observations, rewards, terminated, truncated, ""
+
+    def print_environment(self):
+        self.fire_env.printData()
+        print("")
+    
 # Set up the basic environment
 env = WildfireEnv()
+
+# Run a random sampling basically for 20 iterations
+for _ in range(20):
+    observation, reward, terminated, truncated, info = env.step(env.action_space.sample())
+    env.print_environment()

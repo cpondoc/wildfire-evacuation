@@ -103,6 +103,10 @@ class FireEnvironment{
 		return possibleStates;
 	}
 
+	int returnReward() {
+		return getStateUtility(state, actionSpace);
+	}
+
 	/*
 	Helper function that updates the states through all deterministic changes in the time step. 
 	Check through all states and deplete fire by 1.
@@ -303,6 +307,7 @@ class FireEnvironment{
 		state = sampleNextState(state, distanceConstant, pathedAreas, evacuationPaths);
 		updateActionSpace(state, actionSpace, evacuationPaths);
 		nextReward = getStateUtility(state, actionSpace);
+		timeStep += 1;
 		
 		//We have run the updates. Now let's put that badboy in a numpy array shape=(5,gridDim,gridDim)
 
@@ -322,6 +327,10 @@ class FireEnvironment{
 		actionSpace = takeAction({first, second}, actionSpace);
 		
 		return nextReward;
+	}
+
+	bool isTerminated() {
+		return (timeStep >= 100);
 	}
 
 };
@@ -351,7 +360,21 @@ PYBIND11_MODULE(fire_environment, handle) {
 
 	)
 
-	//
+	// Return reward at a time step
+	.def("getReward", [](FireEnvironment& self) {
+			return self.returnReward();
+		}
+
+	)
+
+	// Return if terminated
+	.def("getTerminated", [](FireEnvironment& self) {
+			return self.isTerminated();
+		}
+
+	)
+
+	// Get the current state rn
 	.def("getState", [](FireEnvironment& self) {
 			py::array out = py::cast(self.returnState());
 			return out;
