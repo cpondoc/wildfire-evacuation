@@ -96,7 +96,7 @@ class FireEnvironment{
 	}
 
 	vector<int> returnActionSpace() {
-		vector<int> possibleStates;
+		vector<int> possibleStates(1, 1);
 		for (int i = 0; i < actionSpace.size(); i++) {
 			possibleStates.push_back(actionSpace[i].availablePathsToTake.size());
 		}

@@ -23,12 +23,15 @@ class WildfireEnv(gym.Env):
 
         # Set the observation space
         sep = (self.fire_env.getState())
-        self.observation_space = spaces.Box(low=0, high=100, shape=(5, 20, 20), dtype=np.float64)
+        self.observation_space = spaces.Box(low=0, high=200, shape = sep.shape, dtype=np.float64)
 
 
         # Set the action space
         actions = self.fire_env.getActions()
-        self.action_space = spaces.Discrete(n = len(actions) + 1, start=-1)
+
+        #I'm not doing a fancy prefix sum solution for an action space on the order of 10
+        self.ind_to_pair = [[populated_area, path] for populated_area, path_count in enumerate(actions) for path in range(path_count)]
+        self.action_space = spaces.Discrete(n = len(self.ind_to_pair), start=0)
 
     '''
     Reset the entire environment by creating a new environment.
@@ -45,11 +48,12 @@ class WildfireEnv(gym.Env):
     def step(self, action):
         # Call C++ function to take the action
         #self.fire_env.inputAction(action[0], action[1])
-        self.fire_env.inputAction(action, 0)
+        actionTuple = self.ind_to_pair[action]
+
+        rewards = self.fire_env.inputAction(actionTuple[0] - 1, actionTuple[1])
 
         # Gather the observations, rewards, terminated, and truncated
         observations = self.fire_env.getState()
-        rewards = self.fire_env.getReward()
         terminated = self.fire_env.getTerminated()
         truncated = False
         
@@ -65,18 +69,19 @@ class WildfireEnv(gym.Env):
     
 # Set up the basic environment
 env = WildfireEnv()
-check_env(env)
+#check_env(env)
 
 # Set up DQN Model
 model = DQN("CnnPolicy", env, verbose=1, policy_kwargs=dict(normalize_images=False))
-model.learn(total_timesteps=30, log_interval=4)
+model.learn(total_timesteps=10000, log_interval=4)
 
 # Get the initial stuff
 obs = env.reset()[0]
 
 # Run a random sampling basically for 20 iterations
-for _ in range(20):
+for _ in range(99):
     action, _states = model.predict(obs, deterministic=True)
     print(action)
     observation, reward, terminated, truncated, info = env.step(action)
     env.print_environment()
+    print(reward)
