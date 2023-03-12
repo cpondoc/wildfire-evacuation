@@ -1,3 +1,5 @@
+import sys
+
 # OpenAI Gym Libraries
 import gym
 from gym import spaces
@@ -31,6 +33,7 @@ class WildfireEnv(gym.Env):
 
         #I'm not doing a fancy prefix sum solution for an action space on the order of 10
         self.ind_to_pair = [[populated_area, path] for populated_area, path_count in enumerate(actions) for path in range(path_count)]
+        print(self.ind_to_pair)
         self.action_space = spaces.Discrete(n = len(self.ind_to_pair), start=0)
 
     '''
@@ -67,21 +70,38 @@ class WildfireEnv(gym.Env):
         self.fire_env.printData()
         print("")
     
-# Set up the basic environment
-env = WildfireEnv()
-#check_env(env)
 
-# Set up DQN Model
-model = DQN("CnnPolicy", env, verbose=1, policy_kwargs=dict(normalize_images=False))
-model.learn(total_timesteps=10000, log_interval=4)
 
-# Get the initial stuff
-obs = env.reset()[0]
+def run_simulation(train):
+    # Set up the basic environment
+    env = WildfireEnv()
+    #check_env(env)
 
-# Run a random sampling basically for 20 iterations
-for _ in range(99):
-    action, _states = model.predict(obs, deterministic=True)
-    print(action)
-    observation, reward, terminated, truncated, info = env.step(action)
-    env.print_environment()
-    print(reward)
+    # Set up DQN Model
+    model = None
+    if train:
+        model = DQN("CnnPolicy", env, verbose=1, policy_kwargs=dict(normalize_images=False))
+        print("begin training")
+        model.learn(total_timesteps=1000000, log_interval=100)
+        model.save("Trained Policy")
+    else:
+        model = DQN.load("Trained Policy")
+
+
+    # Run a random sampling basically for 20 iterations
+    for _ in range(10):
+        # Get the initial stuff
+        obs = env.reset()[0]
+        for _ in range(99):
+            action, _states = model.predict(obs, deterministic=True)
+            print(action)
+            observation, reward, terminated, truncated, info = env.step(action)
+            env.print_environment()
+            print(reward)
+
+def main(train):
+    train = int(train)
+    run_simulation(train)
+
+if __name__ == "__main__":
+    main(sys.argv[1])
