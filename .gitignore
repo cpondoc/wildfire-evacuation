@@ -5,3 +5,4 @@ wildfire.dSYM/
 build/
 pybind11
 policies/
+.ipynb_checkpoints/
