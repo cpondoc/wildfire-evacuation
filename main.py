@@ -3,6 +3,7 @@ import sys
 # OpenAI Gym Libraries
 import gym
 from gym import spaces
+import time
 
 # Custom Environment
 import build.fire_environment
@@ -14,6 +15,8 @@ import numpy as np
 from stable_baselines3 import DQN
 from stable_baselines3.common.env_checker import check_env
 
+total_time = 0
+leaving_time, enter_time, external_time = 0, 0, 0
 
 class WildfireEnv(gym.Env):
     '''
@@ -33,8 +36,11 @@ class WildfireEnv(gym.Env):
 
         #I'm not doing a fancy prefix sum solution for an action space on the order of 10
         self.ind_to_pair = [[populated_area, path] for populated_area, path_count in enumerate(actions) for path in range(path_count)]
-        print(self.ind_to_pair)
         self.action_space = spaces.Discrete(n = len(self.ind_to_pair), start=0)
+
+        # Creating starting times
+        self.total_time = 0
+        self.leaving_time, self.enter_time, self.external_time = 0, 0, 0
 
     '''
     Reset the entire environment by creating a new environment.
@@ -49,8 +55,13 @@ class WildfireEnv(gym.Env):
     Take a step and advance the environment after taking an action.
     '''
     def step(self, action):
+        # Get start of time call
+        self.enter_time = time.time()
+        if (self.leaving_time != 0):
+            self.external_time += self.enter_time - self.leaving_time
+        start = time.time()
+
         # Call C++ function to take the action
-        #self.fire_env.inputAction(action[0], action[1])
         actionTuple = self.ind_to_pair[action]
 
         rewards = self.fire_env.inputAction(actionTuple[0] - 1, actionTuple[1])
@@ -59,7 +70,12 @@ class WildfireEnv(gym.Env):
         observations = self.fire_env.getState()
         terminated = self.fire_env.getTerminated()
         truncated = False
-        
+
+        # Get end of time call
+        end = time.time()
+        self.total_time += (end - start)
+        self.leaving_time = time.time()
+
         # Return necessary 4 tuple
         return observations, rewards, terminated, truncated, {"": ""}
 
@@ -82,7 +98,9 @@ def run_simulation(train):
     if train:
         model = DQN("CnnPolicy", env, verbose=1, policy_kwargs=dict(normalize_images=False))
         print("begin training")
-        model.learn(total_timesteps=1000000, log_interval=100)
+        model.learn(total_timesteps=110000, log_interval=100)
+        print(env.total_time)
+        print(env.external_time)
         model.save("Trained Policy")
     else:
         model = DQN.load("Trained Policy")
@@ -103,5 +121,8 @@ def main(train):
     train = int(train)
     run_simulation(train)
 
+'''
+Call with CLI argument "1" if you want to train, "0" if you don't
+'''
 if __name__ == "__main__":
     main(sys.argv[1])
