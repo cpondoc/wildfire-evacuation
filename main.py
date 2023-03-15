@@ -143,19 +143,31 @@ def run_simulation(train):
         print(env.external_time)
         model.save("Trained Policy")
     else:
-        model = DQN.load("Trained Policy")
+        model = DQN.load("policies/Trained Policy")
 
 
     # Run a random sampling basically for 20 iterations
     for _ in range(10):
-        # Get the initial stuff
+        # Define the initial observation and cumulative reward
         obs = env.reset()[0]
+        total_reward = 0
+        
+        # Run for 100 timesteps
         for _ in range(99):
+            # Get a next action
             action, _states = model.predict(obs, deterministic=True)
-            print(action)
+            print("Action: " + str(action))
+            
+            # Take the action and advance the state
             observation, reward, terminated, truncated, info = env.step(action)
             env.print_environment()
-            print(reward)
+            print("Current Reward: " + str(reward))
+            
+            # Add to the total reward
+            total_reward += reward
+            
+        # Print out the total accumulated reward
+        print("Accumulated Reward: " + str(total_reward))
 
 def main(train):
     train = int(train)
