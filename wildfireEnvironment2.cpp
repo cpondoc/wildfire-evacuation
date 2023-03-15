@@ -264,7 +264,7 @@ class FireEnvironment{
 		}
 
 		// Sets fuel levels
-		normal_distribution<double> normal(8, 3);
+		normal_distribution<double> normal(8.5, 3);
 		for(int i = 0; i < state.size(); i++){
 			for(int j = 0; j < state[0].size(); j++){
 				state[i][j].fuel = max(double(0), normal(gen));
