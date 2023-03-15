@@ -1,6 +1,6 @@
 # OpenAI Gym Libraries
-import gym
-from gym import spaces
+import gymnasium as gym
+from gymnasium import spaces
 import time
 
 # Custom Environment
