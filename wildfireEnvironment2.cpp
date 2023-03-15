@@ -197,8 +197,6 @@ class FireEnvironment{
 
 	/*
 	Function to calculate the total utility of all of the states
-	TO-DO: should the first check see whether or not the action space is evacuating?
-	TO-DO: should the second case consider whether or not the spot is on fire but they are not evacuated?
 	*/
 	int getStateUtility(vector<vector<LandCell> >& state, vector<populatedArea>& actionSpace) {
 		int reward = 0;
