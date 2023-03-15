@@ -272,8 +272,11 @@ class FireEnvironment{
 		}
 
 		//INITIALIZE PATHS
-		evacuationPaths.push_back({{{0,6},{1,6}}, 3, true});
-		evacuationPaths.push_back({{{4,17},{4,18},{4,19}}, 3, true});
+		evacuationPaths.push_back({{{17,0},{17,1},{17,2},{17,3},{17,4}}, 3, true});
+		evacuationPaths.push_back({{{17,6},{17,7},{17,8},{17,9},{17,10},{18,10},{19,10}}, 4, true});
+		evacuationPaths.push_back({{{8,10},{8,9},{7,9},{6,9},{5,9},{4,9},{3,9},{2,9},{1,9},{0,9}}, 3, true});
+		evacuationPaths.push_back({{{9,11},{9,10},{9,9},{9,8},{9,7},{9,6},{9,5},{9,4},{9,3},{9,2},{9,1},{9,0}}, 6, true});
+		evacuationPaths.push_back({{{8,12},{8,13},{8,14},{9,14},{10,14},{11,14},{11,15},{11,16},{11,17},{11,18},{11,19}}, 7, true});
 		//builds the pathedAreas struct
 		for(int i = 0; i < evacuationPaths.size(); i++){
 			for(int j = 0; j < evacuationPaths[i].pathLocations.size(); j++){
@@ -289,8 +292,8 @@ class FireEnvironment{
 
 
 		//INITIALIZES ACTIONS
-		actionSpace.push_back({2, 6, false, INT_MAX, {&evacuationPaths[0]}, nullptr});
-		actionSpace.push_back({4, 16, false, INT_MAX, {&evacuationPaths[1]}, nullptr});
+		actionSpace.push_back({8, 11, false, INT_MAX, {&evacuationPaths[2], &evacuationPaths[3], &evacuationPaths[4]}, nullptr});
+		actionSpace.push_back({17, 5, false, INT_MAX, {&evacuationPaths[0], &evacuationPaths[1]}, nullptr});
 
 		// Indicate populated areas also on game state
 		state[2][6].populated = true;
