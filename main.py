@@ -95,15 +95,15 @@ class WildfireEnv(gym.Env):
 Defines our own custom class for a CNN
 '''
 class CustomCNN(BaseFeaturesExtractor):
-    def __init__(self, observation_space: spaces.Box, features_dim: int = 512, normalized_image: False):
-        super().__init__(observation_space, features_dim, normalized_image)
+    def __init__(self, observation_space: spaces.Box, features_dim=512, normalized_image=False):
+        super().__init__(observation_space, features_dim)
         n_input_channels = observation_space.shape[0]
         self.cnn = nn.Sequential(
-            nn.Conv2d(n_input_channels, 16, kernel_size=4, stride=1, padding=2),
+            nn.Conv2d(n_input_channels, 32, kernel_size=4, stride=1, padding=2),
             nn.ReLU(),
-            nn.Conv2d(16, 32, kernel_size=4, stride=1, padding=0),
+            nn.Conv2d(32, 64, kernel_size=4, stride=1, padding=0),
             nn.ReLU(),
-            nn.Conv2d(32, 32, kernel_size=3, stride=1, padding=0),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
             nn.ReLU(),
             nn.Flatten(),
         )
@@ -128,15 +128,15 @@ def run_simulation(train):
     model = None
     if train:
         # Create specific key word arguments and create model
-        '''policy_kwargs = dict(
+        policy_kwargs = dict(
             features_extractor_class=CustomCNN,
-            features_extractor_kwargs=dict(features_dim=512),
+            features_extractor_kwargs=dict(features_dim=256),
             normalize_images=False
         )
-        model = DQN("CnnPolicy", env, verbose=1, policy_kwargs=policy_kwargs)'''
+        model = DQN("CnnPolicy", env, verbose=1, policy_kwargs=policy_kwargs)
         
         # Without using custom network
-        model = DQN("CnnPolicy", env, verbose=1, policy_kwargs=dict(normalize_images=False))
+        #model = DQN("CnnPolicy", env, verbose=1, policy_kwargs=dict(normalize_images=False))
         print("begin training")
         model.learn(total_timesteps=110000, log_interval=100)
         print(env.total_time)
