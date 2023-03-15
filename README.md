@@ -1,5 +1,5 @@
 # CS 238 Final Project
-By: Chris Pondoc, Joey Guman, and Joey O'Brien
+By: Joey Guman, Chris Pondoc, and Joey O'Brien
 
 ## Project Description
 One of the main effects of climate change in the world today is the increased frequency and intensity of wildfires. This reality has led to an increase in interest in wildfire response as demonstrated by recent work done by SISL. Our proposed final project builds off of existing research within wildfire disaster response. The central motivation is to simulate an environment over a wide area with residential sectors and a spreading wildfire. Unlike previous research, which focused on monitoring the spread of fire, we will focus on developing a community’s response to the wildfire in the form of evacuation in an environment that presumes perfect information about the fire’s current state. More specifically, the motivation will be to identify areas that must be evacuated and the ideal path to “safe areas.” We will attempt to employ deep reinforcement learning techniques to accomplish this task.
