@@ -114,10 +114,11 @@ class CustomCNN(BaseFeaturesExtractor):
                 th.as_tensor(observation_space.sample()[None]).float()
             ).shape[1]
 
-        self.linear = nn.Sequential(nn.Linear(n_flatten, features_dim), nn.ReLU())
+        self.linear = nn.Sequential(nn.Linear(n_flatten, features_dim * 2), nn.ReLU())
+        self.linear2 = nn.Sequential(nn.Linear(features_dim * 2, features_dim), nn.ReLU())
 
     def forward(self, observations: th.Tensor) -> th.Tensor:
-        return self.linear(self.linear(self.cnn(observations)))
+        return self.linear2(self.linear(self.cnn(observations)))
 
 def run_simulation(train):
     # Set up the basic environment
