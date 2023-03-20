@@ -10,20 +10,8 @@ Initial start with modeling wildfire spread!
 #include <time.h>
 #include <vector>
 #include <random> 
-#include <pybind11/pybind11.h>
 
 using namespace std;
-
-namespace py = pybind11;
-
-void tryFunction() {
-	cout << "Hi";
-}
-
-PYBIND11_MODULE(wildfire_test, handle) {
-	handle.doc() = "Chris Pondoc is the GOAT";
-	handle.def("some_function", &tryFunction);
-}
 
 random_device rd;
 mt19937 gen(rd());
@@ -262,7 +250,7 @@ pair<int,int> sparseSampling(vector<vector<LandCell> > state, vector<populatedAr
 /*
 Main function that controls the simulation
 */
-void runSimulation(int gridDim, double distanceConstant, int burnRate) {
+int runSimulation(int gridDim, double distanceConstant, int burnRate) {
 	// Set up randomness
 	random_device rd;
     mt19937 gen(rd());
@@ -301,9 +289,10 @@ void runSimulation(int gridDim, double distanceConstant, int burnRate) {
 	for (int i = 0; i < 100; i++) {
 		// Run the next state forward and sample the next state
 		int temp = getStateUtility(state, actionSpace);
+		//printData(state);
 		actualReward += temp;
-		//if(temp < 0)
-		//	cout << "We lost them" << endl;
+		if(temp < 0)
+			cout << "We lost them" << endl;
 		runDetForward(state, actionSpace);
 		state = sampleNextState(state, distanceConstant);
 
@@ -311,11 +300,10 @@ void runSimulation(int gridDim, double distanceConstant, int burnRate) {
 		pair<int, int> best = sparseSampling(state, actionSpace, 5, 3, distanceConstant);
 		actionSpace = takeAction(best.first, actionSpace);
 		
-		// Print state (since we know the fire is going crazy right now)
-		printData(state);
 		cout << i << endl;
 	}
 	cout << "HEAR YE HEAR YE. THE KING PROCLAIMS OUR FINAL REWARD IS " << actualReward << endl;
+	return actualReward;
 }
 
 /*
@@ -327,12 +315,15 @@ int main()
 	// Initialize random seed, grid dimension, and hyperparameters
 	srand (time(NULL));
 	int gridDim = 20;
-	double distanceConstant = 0.094;
+	double distanceConstant = 0.124;
     int burnRate = 5;
 	
 	// Running simulation
-	cout << "Initially running the simulation" << endl << endl;
-	runSimulation(gridDim, distanceConstant, burnRate);
+	cout << "Initially running the simulation" << endl;
+	double total = 0;
+	for(int i = 0; i < 100; i++)
+		total += runSimulation(gridDim, distanceConstant, burnRate);
+	cout << "Average across all simulations is " << (total / 100) << endl;
     
     return 0;
 }
